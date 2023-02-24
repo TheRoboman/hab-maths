@@ -4,6 +4,7 @@ from math import pi,sqrt,exp,log
 g = 9.81                # accl due to gravity in m/s^2
 R_air = 287.1           # specific gas constant for air in J/kg-K
 R_he = 2077.1           # specific gas constant for helium in J/kg-K
+T = 250                 # average temperature of atmosphere in K
 
 rho_air = 1.204         # density of air in kg/m^3 or g/L
 rho_he = 0.1634         # density of helium in kg/m^3 or g/L
@@ -13,14 +14,14 @@ pressure = 101325       # pressure of gas in Pa
 
 descent = False         # will be set to True if modelling descent with balloons
 vertical_rate = 3       # desired ascent rate in m/s
-mass_balloons = 10      # mass of balloons (includes venters and things that form part of the balloon envelope)
-mass_suspended = 35     # flight train mass
+mass_balloons = 10      # mass of balloon/s (includes valves and things that form part of the balloon envelope)
+mass_suspended = 35     # flight train mass (payloads, tethers, etc. suspended from balloon)
 mass_pipe = 0.35        # mass of pipe or adapter inserted into balloon neck for inflation
 altitude = 0            # altitude above mean sea level in m
 
 
 def checkDescent(mass_suspended,mass_balloons,volume,rho_air,rho_he):
-    # check if net force (assuming no motion so no drag term) is up or down, and then set the descent flag
+    # check if net force (without motion/drag) is up or down, and then return the descent flag
     # this function should be run before running the functions to solve for vertical rate or volume
     F_net = (rho_air-rho_he) * volume * g - (mass_balloons + mass_suspended) * g
     if F_net > 0:
@@ -76,17 +77,13 @@ def Atmospheric_Model(altitude):
 # The model in this function starts at 0 m AMSL, up to a maximum of 47 km
 # Uses SI units (m, K, Pa, kg, J, etc.)
 
-    g = 9.81
-    R = 287.1
-    R_he = 2077.1
-
-    if (altitude > 0) and (altitude <= 11000):
+    if (altitude >= 0) and (altitude <= 11000):
         k = 0.0065          # temperature lapse rate (K/m)
         T_base = 288.15     # temperature at base of altitude window in K
         P_base = 101325     # pressure at base of altitude window in Pa
         h_base = 0          # height of base of altitude window in m above sea level
         Temperature = T_base - (k * altitude)
-        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R*k))
+        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R_air*k))
 
     elif (altitude > 11000) and (altitude <= 20000):
         k = 0
@@ -94,7 +91,7 @@ def Atmospheric_Model(altitude):
         P_base = 22632
         h_base = 11000
         Temperature = T_base
-        Pressure = P_base * exp((g/(R*T_base)) * (altitude - h_base))
+        Pressure = P_base * exp((g/(R_air*T_base)) * (altitude - h_base))
 
     elif (altitude > 20000) and (altitude <= 32000):
         k = -0.001
@@ -102,7 +99,7 @@ def Atmospheric_Model(altitude):
         P_base = 5474.9
         h_base = 20000
         Temperature = T_base - (k * altitude)
-        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R*k))
+        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R_air*k))
 
     elif (altitude > 32000) and (altitude <= 47000):
         k = -0.0028
@@ -110,28 +107,36 @@ def Atmospheric_Model(altitude):
         P_base = 868.02
         h_base = 32000
         Temperature = T_base - (k * altitude)
-        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R*k))
+        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R_air*k))
 
     elif (altitude > 47000) and (altitude <= 51000):
         k = 0
         T_base = 270.65
-        P_base = 868.02
+        P_base = 110.91
         h_base = 47000
+        Temperature = T_base
+        Pressure = P_base * exp((g/(R_air*T_base)) * (altitude - h_base))
+
+    elif (altitude > 51000) and (altitude <= 71000):
+        k = 0.0028
+        T_base = 270.65
+        P_base = 66.94
+        h_base = 51000
         Temperature = T_base - (k * altitude)
-        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R*k))
+        Pressure = P_base * (1 - (k/T_base) * (altitude - h_base))**(g/(R_air*k))
 
     else:
-        print("Altitude must be between 0 - 47 km AMSL")
+        print("Altitude must be between 0 - 71 km AMSL")
         return 0,0,0,0
 
-    rho_air = Pressure/(R*Temperature)
+    rho_air = Pressure/(R_air*Temperature)
     rho_he = Pressure/(R_he*Temperature)
     return Temperature,Pressure,rho_air,rho_he
 
 
 def IdealGasLaw_V(t1,t2,p1,p2,v1):
-    # calculate balloon volume at new altitude conditions, where t1 = old temp, t2 = new temp, p1 = old pressure, p2 = new pressure, v1 = old volume
-    # use in conjunction with atmospheric model function
+    # calculate balloon volume at new altitude conditions, where 
+    # t1 = old temp, t2 = new temp, p1 = old pressure, p2 = new pressure, v1 = old volume
     v2 = (t2*v1*p1)/(t1*p2)
     return v2
 
@@ -149,20 +154,12 @@ def Volume_to_Neck_Lift(mass_pipe,mass_balloons,volume,rho_air,rho_he):
 
 
 def simpleBurst_Height(initial_volume,burst_volume):
-    # use SI units
-    R = 287
-    T = 250
-    g = 9.81
-    burst_height = (R * T / g) * log(burst_volume/initial_volume)
+    burst_height = (R_air * T / g) * log(burst_volume/initial_volume)
     return burst_height
 
 
 def simpleBurst_Volume(burst_height,burst_volume):
-    # use SI units
-    R = 287
-    T = 250
-    g = 9.81
-    initial_volume = burst_volume * exp((-g*burst_height)/(R*T))
+    initial_volume = burst_volume * exp((-g*burst_height)/(R_air*T))
     return initial_volume
 
         
