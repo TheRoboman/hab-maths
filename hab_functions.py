@@ -1,37 +1,24 @@
 from math import pi,sqrt,exp,log
 
-# Description and examples of constants/variables used in functions
+# Constants
 g = 9.81                # accl due to gravity in m/s^2
 R_air = 287.1           # specific gas constant for air in J/kg-K
 R_he = 2077.1           # specific gas constant for helium in J/kg-K
 T = 250                 # average temperature of atmosphere in K
 
-rho_air = 1.204         # density of air in kg/m^3 or g/L
-rho_he = 0.1634         # density of helium in kg/m^3 or g/L
-Cd = 0.3                # coefficient of drag
-temperature = 293.15    # temperature of gas in K
-pressure = 101325       # pressure of gas in Pa
 
-descent = False         # will be set to True if modelling descent with balloons
-vertical_rate = 3       # desired ascent rate in m/s
-mass_balloons = 10      # mass of balloon/s (includes valves and things that form part of the balloon envelope)
-mass_suspended = 35     # flight train mass (payloads, tethers, etc. suspended from balloon)
-mass_pipe = 0.35        # mass of pipe or adapter inserted into balloon neck for inflation
-altitude = 0            # altitude above mean sea level in m
-
-
-def checkDescent(mass_suspended,mass_balloons,volume,rho_air,rho_he):
+def Check_Direction(mass_suspended,mass_balloons,volume,rho_air,rho_he):
     # check if net force (without motion/drag) is up or down, and then return the descent flag
     # this function should be run before running the functions to solve for vertical rate or volume
-    F_net = (rho_air-rho_he) * volume * g - (mass_balloons + mass_suspended) * g
-    if F_net > 0:
+    F = (rho_air-rho_he) * volume * g - (mass_balloons + mass_suspended) * g
+    if F > 0:
         descent = False
     else:
         descent = True
     return descent
 
 
-def Solve_Vertical_Rate_From_Volume(volume,Cd,rho_air,rho_he,mass_balloons,mass_suspended,descent):
+def Volume_To_Vertical_Rate(volume,Cd,rho_air,rho_he,mass_balloons,mass_suspended,descent):
     mass = mass_balloons + mass_suspended
     radius = ((3*volume)/(4*pi))**(1/3)
 
@@ -48,7 +35,7 @@ def Solve_Vertical_Rate_From_Volume(volume,Cd,rho_air,rho_he,mass_balloons,mass_
     return vertical_rate
 
 
-def Solve_Volume_From_Vertical_Rate(vertical_rate,Cd,rho_air,rho_he,mass_balloons,mass_suspended,descent):
+def Vertical_Rate_To_Volume(vertical_rate,Cd,rho_air,rho_he,mass_balloons,mass_suspended,descent):
     mass = mass_balloons + mass_suspended
 
     # Coefficients of cubic ar^3 + br^2 + cr + d = 0:
@@ -74,7 +61,7 @@ def Solve_Volume_From_Vertical_Rate(vertical_rate,Cd,rho_air,rho_he,mass_balloon
 def Atmospheric_Model(altitude):
 # https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
 # https://en.wikipedia.org/wiki/International_Standard_Atmosphere#Description
-# The model in this function starts at 0 m AMSL, up to a maximum of 47 km
+# The model in this function starts at 0 m AMSL, up to a maximum of 71 km
 # Uses SI units (m, K, Pa, kg, J, etc.)
 
     if (altitude >= 0) and (altitude <= 11000):
@@ -135,7 +122,7 @@ def Atmospheric_Model(altitude):
 
 
 def IdealGasLaw_V(t1,t2,p1,p2,v1):
-    # calculate balloon volume at new altitude conditions, where 
+    # calculate balloon volume at new altitude conditions, where:
     # t1 = old temp, t2 = new temp, p1 = old pressure, p2 = new pressure, v1 = old volume
     v2 = (t2*v1*p1)/(t1*p2)
     return v2
