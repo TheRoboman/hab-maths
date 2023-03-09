@@ -24,7 +24,8 @@ def refinedBurst_Height(V_initial,V_burst):
     # Ensure initial volume is less than burst volume before continuing
     if V_initial > V_burst:
         print("Initial volume must be < burst volume!")
-        return -1
+        # return dummy error value
+        return -998
     elif V_initial == V_burst:
         print("Burst at 0 m ASL")
         return 0
@@ -105,12 +106,14 @@ def refinedBurst_Height(V_initial,V_burst):
 
     # Return 
     print("Burst altitude outside range 0 - 51 km.")
-    return -2
+    # return dummy error value
+    return -999
+
 
 if __name__ == "__main__":
     V_i = float(input("Enter initial volume in m\u00b3: "))
     V_b = float(input("Enter burst volume in m\u00b3: "))
     H_b = refinedBurst_Height(V_i,V_b)
-    print(f"Refined burst height is {H_b:.2f} m\u00b3")
+    print(f"Refined burst height is {H_b:.2f} m")
     H_sb = simpleBurst_Height(V_i,V_b)
-    print(f"Simple burst height is {H_sb:.2f} m\u00b3")
+    print(f"Simple burst height is {H_sb:.2f} m")
